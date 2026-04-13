@@ -1,40 +1,39 @@
-C_FILES = $(shell find ../kernel/*.c ../drivers/*.c ../*.c)
-temp = $(notdir $(C_FILES))
-O_FILES = ${temp:.c=.o}
+# Пути к исходникам
+C_SOURCES = $(wildcard ../kernel/*.c ../drivers/*.c ../*.c)
+# Важно: kernel_entry.o должен быть ПЕРВЫМ в списке для линковки
+OBJ = kernel_entry.o $(notdir $(C_SOURCES:.c=.o))
 
-# флаг для дебага для gcc
-CFLAGS = -g
+CC = i386-elf-gcc
+LD = i386-elf-ld
+# Добавил -Wall для отлова ошибок и -m32 на всякий случай
+CFLAGS = -g -ffreestanding -std=c99 -Wall -m32
 
-run: os-image.bin
-	qemu-system-i386 -fda os-image.bin
-	make clean
-
-debug: os-image.bin kernel.elf
-	# kernel.elf нужен для gdb как symbol-file
-	# флаг -s указывает qemu открыть и прослушивать 1234 порт
-	# чтобы gdb смог соединиться с ним для дебага
-	# флаг -S указыает QEMU не запускать образ и подождать подключений
-	qemu-system-i386 -s -S -fda os-image.bin
-	make clean
-
+# Главная цель
 os-image.bin: bootsect.bin kernel.bin
 	cat bootsect.bin kernel.bin > os-image.bin
+	truncate -s 1M os-image.bin
 
-bootsect.bin:
-	cd ../boot/ && nasm bootsect.asm -f bin -o ../build/bootsect.bin && cd -
+run: os-image.bin
+	qemu-system-i386 -drive format=raw,file=os-image.bin,if=floppy
 
-kernel.bin: kernel_entry.o kernel.o
-	i386-elf-ld -o kernel.bin -Ttext 0x1000 kernel_entry.o $(O_FILES) --oformat binary
+# Сборка загрузчика
+bootsect.bin: ../boot/bootsect.asm
+	nasm $< -f bin -i ../boot/ -o $@
 
-kernel_entry.o:
-	nasm ../boot/kernel_entry.asm -f elf -o kernel_entry.o
+# Линковка ядра
+# Добавлен флаг -e _start, чтобы линковщик точно знал, где начало
+kernel.bin: $(OBJ)
+	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary -e _start
 
-kernel.o:
-	i386-elf-gcc ${CFLAGS} -ffreestanding -c $(C_FILES)
+# Правила для компиляции
+kernel_entry.o: ../boot/kernel_entry.asm
+	nasm $< -f elf -o $@
 
-kernel.elf: kernel_entry.o kernel.o 
-	# как kernel.bin только без --oformat binary
-	i386-elf-ld -o kernel.bin -Ttext 0x1000 kernel_entry.o $(O_FILES) -o kernel.elf
+# Указываем VPATH, чтобы make знал, где искать .c файлы для правил %.o
+VPATH = ../kernel:../drivers:..
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm *.bin *.o *.elf
+	rm -f *.bin *.o *.elf

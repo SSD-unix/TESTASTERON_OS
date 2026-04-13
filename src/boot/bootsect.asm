@@ -1,69 +1,61 @@
 ; ------------------------------------------------------------------------------
-; Guide:	01-KERNEL
-; File:		ex00 / bootsect.asm
-; Title:	Программа загрузочного сектора, которая загружает ядро, написанное
-;			на C в 32-битный защищенный режим.
+; Guide:    01-KERNEL
+; File:     boot/bootsect.asm
+; Title:    Обновленный загрузчик с поддержкой расширенного ядра
 ; ------------------------------------------------------------------------------
-; Description:
-; ------------------------------------------------------------------------------
-
 
 [org 0x7c00]
 
-KERNEL_OFFSET equ 0x1000	; Смещение в памяти, из которого мы загрузим ядро
+KERNEL_OFFSET equ 0x1000    ; Смещение в памяти для ядра
 
-	mov [BOOT_DRIVE], dl	; BIOS stores our boot drive in DL , so it ’s
-							; best to remember this for later. (Remember that
-							; the BIOS sets us the boot drive in 'dl' on boot)
-	mov bp, 0x9000			; Устанавливаем стек
-	mov sp, bp
+    mov [BOOT_DRIVE], dl    ; Сохраняем номер загрузочного диска от BIOS
+    mov bp, 0x9000          ; Устанавливаем стек подальше от кода
+    mov sp, bp
 
-	mov bx, MSG_REAL_MODE	; Печатаем сообщение
-	call print_string
+    mov bx, MSG_REAL_MODE
+    call print_string
 
-	call load_kernel		; Загружаем ядро
-	call switch_to_pm		; Переключаемся в Защищенный Режим
-	jmp $
+    call load_kernel        ; Загружаем ядро и данные с диска
+    call switch_to_pm       ; Прыгаем в 32-битный режим
+    jmp $
 
-%include "print_string.asm"		; ф. печати строки
-%include "print_hex.asm"		; ф. печати 16-ричного числа
-%include "disk_load.asm"		; ф. чтения диска
-%include "print_string_pm.asm"	; ф. печати строки (32PM)
-%include "switch.asm"			; ф. переключения в 32PM
-%include "gdt.asm"				; таблица GDT
+; Инклуды. Если используешь Makefile с флагом -i, пути останутся такими.
+%include "print_string.asm"
+%include "print_hex.asm"
+%include "disk_load.asm"
+%include "print_string_pm.asm"
+%include "switch.asm"
+%include "gdt.asm"
 
 [bits 16]
-
 load_kernel:
-	mov bx, MSG_LOAD_KERNEL
-	call print_string		; Печатаем сообщение о том, то мы загружаем ядро
-							; Устанавливаем параметры для функции disk_load:
-	mov bx, KERNEL_OFFSET	; Загрузим данные в место памяти по		TODO: disk_load main lookup
-							; смещению KERNEL_OFFSET
-	mov dh, 16				; Загрузим много секторов. *
-	mov dl, [BOOT_DRIVE]	; Загрузим данные из BOOT_DRIVE (Возвращаем BOOT_DRIVE)
-	call disk_load			; Вызываем функцию disk_load
-	ret
+    mov bx, MSG_LOAD_KERNEL
+    call print_string
 
+    mov bx, KERNEL_OFFSET   ; Куда грузим
+    ; Увеличиваем количество секторов. 
+    ; 16 было мало, поставим 50, чтобы влезло ядро + таблица ФС + первые файлы.
+    mov dh, 50              
+    mov dl, [BOOT_DRIVE]
+    call disk_load          
+    ret
 
-[bits 32]					; Сюда мы попадем после переключения в 32PM
-
+[bits 32]
 BEGIN_PM:
-	mov ebx, MSG_PROT_MODE
-	call print_string_pm	; Печатаем сообщение об успешной загрузке в 32PM
-	call KERNEL_OFFSET		; Переходим в адрес, по которому загрузился код ядра
-	jmp $
+    mov ebx, MSG_PROT_MODE
+    call print_string_pm    
+    
+    ; Прыгаем в ядро. 
+    ; Используем call, чтобы если ядро сделает ret, мы вернулись в jmp $
+    call KERNEL_OFFSET      
+    jmp $
 
+; Данные
+BOOT_DRIVE:      db 0
+MSG_REAL_MODE:   db "Started in 16-bit Real Mode", 0
+MSG_PROT_MODE:   db "Landed in 32-bit Protected Mode", 0
+MSG_LOAD_KERNEL: db "Loading kernel & FS data...", 0
 
-BOOT_DRIVE:			db 0
-MSG_REAL_MODE:		db "Started in 16-bit Real Mode", 0
-MSG_PROT_MODE:		db "Successfully landed in 32-bit Protected mode", 0
-MSG_LOAD_KERNEL:	db "Loading kernel into VIDEO_MEMORY", 0
-
+; Заполнение до 512 байт
 times 510-($-$$) db 0
 dw 0xaa55
-
-; ------
-; * - Забавный факт: если загрузить меньше секторов, то мы столкнемся со
-; странными ошибками когда будем писать ядро на Си. Например, аргументы
-; функции могут быть повреждены, а строки "обрезаны".

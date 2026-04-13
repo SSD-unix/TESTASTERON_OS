@@ -1,25 +1,23 @@
-/*------------------------------------------------------------------------------
-*	Guide:	01-KERNEL
-*	File:	ex01 / common.h
-*	Title:	Всякие удобные константы, типы и функции
-* ------------------------------------------------------------------------------
-*	Description:
-* ----------------------------------------------------------------------------*/
-
-
+/* common.h */
 #ifndef COMMON_H
 #define COMMON_H
 
-// Указанная размерность характерна только для архитектуры x86
-// Подробнее про типы данных: https://metanit.com/cpp/c/2.3.php
+// 1. Базовые типы
+typedef unsigned char  uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int   uint32_t;
+typedef char           int8_t;
+typedef short          int16_t;
+typedef int            int32_t;
 
-typedef unsigned int	u32;	// беззнаковое целое число размером 32 бита
-typedef 		 int	s32; 	// целое число 32 бита со знаком
-typedef unsigned short	u16;	// и т.д.
-typedef 		 short	s16;
-typedef unsigned char	u8;
-typedef 		 char	s8;
+// 2. Твои сокращения (чтобы kmain и остальное не падало)
+typedef int32_t  s32;
+typedef uint32_t u32;
+typedef int16_t  s16;
+typedef uint16_t u16;
+typedef int8_t   s8;
+typedef uint8_t  u8;
 
-void	memcpy(u8 *src, u8 *dest, u32 bytes);
+void memory_copy(char *source, char *dest, int nbytes);
 
 #endif
