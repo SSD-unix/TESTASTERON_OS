@@ -53,6 +53,7 @@ export PATH=$PATH:/usr/local/i386elfgcc/bin
     Клонировать и собрать проект
 
 cd TESTASTERON_OS/src/build
+
 make
 
     Запустить образ ОС с помощью эмулятора
