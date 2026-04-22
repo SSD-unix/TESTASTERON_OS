@@ -1,61 +1,66 @@
-       
-#TESTOSTERONE OS
+🚀 TESTOSTERONE OS
 
-TESTOSTERONE OS — это учебная операционная система, разрабатываемая с нуля. Проект направлен на изучение низкоуровневого программирования, работы ядра (kernel) и взаимодействия с аппаратным обеспечением персонального компьютера.
-О проекте
+TESTOSTERONE OS is an educational operating system built from scratch. This project is a deep dive into low-level programming, kernel development, and direct hardware abstraction.
+📖 About the Project
 
-Цель данного проекта — создать функциональную минималистичную ОС, понимая каждый этап: от загрузчика до управления памятью. Название отражает драйв и энергичный подход к разработке сложного системного ПО.
-Основные возможности
+The goal of this project is to build a functional, minimalistic OS while understanding every stage of the process: from the bootloader to memory management. The name reflects the drive, energy, and "hardcore" approach required to develop complex system software.
+✨ Key Features
 
-    Собственное ядро: Написание базовых функций управления системой.
+    Custom Kernel: Implementation of core system management functions.
 
-    Работа с памятью: Определение объема оперативной памяти через CMOS.
+    Memory Awareness: Detecting RAM size via CMOS.
 
-    Низкоуровневый вывод: Прямая работа с видеопамятью для отображения текста.
+    Low-Level Output: Direct VGA video memory manipulation for text rendering.
 
-    Архитектура: Ориентация на x86 системы.
+    x86 Architecture: Optimized for the classic i386 platform.
 
-Технологический стек
+🛠 Tech Stack
 
-    Языки программирования: C, Assembly (NASM)
+    Languages: C, Assembly (NASM)
 
-    Инструменты: GCC, LD, QEMU (для тестирования)
+    Toolchain: GCC, LD
 
-    Окружение: Разработка ведется в среде Linux.
+    Emulation: QEMU
 
-Источники и благодарности
-![Alt text for the image](https://i.imgur.com/1XmNm5b.png)
-Данная операционная система основывается на наработках проекта os-project от Дениса Никулина. Исходный код был взят за фундамент и модифицирован в процессе разработки TESTOSTERONE OS.
-Как запустить (пример)
+    Environment: Linux-based development.
 
-    Скомпилируйте исходный код с помощью make.
+🧬 Credits & Acknowledgments
 
-    Запустите полученный образ через эмулятор QEMU:
-    #Bash
+This operating system is based on the os-project by Denis Nikulin. The original source code served as the foundation and was heavily modified and expanded during the development of TESTOSTERONE OS.
+🚀 Installation & Quick Start
+1. Prerequisites
 
-    qemu-system-i386 -drive format=raw,file=os.img
-Установка и запуск
+Install the QEMU emulator:
+Bash
 
-    Установить эмулятор QEMU (подробнее: https://www.qemu.org/download/)
-
+sudo apt update
 sudo apt install qemu-kvm qemu
 
-    Собрать кросс-компилятор gcc для i386 архитектуры процессора. Удобнее использовать готовый отсюда: https://wiki.osdev.org/GCC_Cross-Compiler#Prebuilt_Toolchains. Для компьютеров на Linux с x86_64 архитектурой:
+2. Set Up the Cross-Compiler
+
+For x86_64 Linux systems, use a prebuilt i386-elf toolchain:
+Bash
 
 wget http://newos.org/toolchains/i386-elf-4.9.1-Linux-x86_64.tar.xz
-
-mkdir /usr/local/i386elfgcc
-
-tar -xf i386-elf-4.9.1-Linux-x86_64.tar.xz -C /usr/local/i386elfgcc --strip-components=1
-
+sudo mkdir -p /usr/local/i386elfgcc
+sudo tar -xf i386-elf-4.9.1-Linux-x86_64.tar.xz -C /usr/local/i386elfgcc --strip-components=1
 export PATH=$PATH:/usr/local/i386elfgcc/bin
 
-    Клонировать и собрать проект
+3. Build the Project
 
-cd TESTASTERON_OS/src/build
+Clone the repository and run the build script:
+Bash
 
+cd TESTOSTERONE_OS/src/build
 make
 
-    Запустить образ ОС с помощью эмулятора
+4. Run the OS
+
+Launch the generated image using QEMU:
+Bash
 
 qemu-system-i386 -fda os-image.bin
+
+🔗 Project Links
+
+Stay updated or contribute via the official mirrors:
