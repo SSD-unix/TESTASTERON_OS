@@ -60,16 +60,16 @@ void execute_command(char *input) {
     if (compare_string(input, "EXIT") == 0) {
         kprint("Stopping the CPU. Bye!\n");
         __asm__ volatile("hlt");
-    } 
+    }
     else if (compare_string(input, "CLEAR") == 0) {
         clear_screen();
-    } 
+    }
     else if (compare_string(input, "HELLO") == 0) {
         kprint("Hello user! Welcome to the shell.\n");
-    } 
+    }
     else if (compare_string(input, "HELP") == 0) {
         kprint("Commands: HELLO, CLEAR, EXIT, LS, FORMAT, TOUCH, INFO\n");
-    } 
+    }
     else if (compare_string(input, "INFO") == 0) {
         kprint("TESTASTERON 1.0 alpha\n");
         kprint("Site: ssdunix.xyz\n");
@@ -79,7 +79,7 @@ void execute_command(char *input) {
     }
     else if (compare_string(input, "LS") == 0) {
         list_files();
-    } 
+    }
     else if (compare_string(input, "FORMAT") == 0) {
         format_disk();
     }
@@ -94,67 +94,75 @@ void execute_command(char *input) {
 
 // --- Главная точка входа ---
 
-void kmain() {       
+void kmain() {
     clear_screen();
     kprint("Welcome to TESTASTERON!\n");
     kprint("AUTHOR SITE: ssdunix.xyz\n");
-    
+
     char user_input[256];
     while (1) {
         kprint("> ");
-        get_user_input(user_input); 
+        get_user_input(user_input);
         execute_command(user_input);
     }
 }
 
-// --- Ввод пользователя (с поддержкой Shift) ---
+// --- Ввод пользователя (с правильным чтением портов) ---
 
 void get_user_input(char* buffer) {
     int i = 0;
     int shift_pressed = 0;
 
     while (1) {
-        unsigned char scancode = port_byte_in(0x60);
+        // Читаем порт статуса (0x64). Бит 0 означает, что пришла новая кнопка.
+        if (port_byte_in(0x64) & 0x01) {
+            unsigned char scancode = port_byte_in(0x60);
 
-        // Нажат Shift (левый или правый)
-        if (scancode == 0x2A || scancode == 0x36) {
-            shift_pressed = 1;
-            continue;
-        }
-        // Отпущен Shift
-        if (scancode == (0x2A | 0x80) || scancode == (0x36 | 0x80)) {
-            shift_pressed = 0;
-            continue;
-        }
-
-        // Игнорируем остальные события отпускания клавиш
-        if (scancode & 0x80) continue;
-        if (scancode == 0) continue;
-
-        // Enter
-        if (scancode == 0x1C) {
-            buffer[i] = '\0';
-            kprint("\n");
-            while (port_byte_in(0x60) == 0x1C);
-            break;
-        }
-
-        // Обработка символов
-        if (scancode < 0x80) {
-            char letter;
-            if (shift_pressed) {
-                letter = scancode_to_char_shift[(int)scancode];
-            } else {
-                letter = scancode_to_char[(int)scancode];
+            // Нажат Shift (левый или правый)
+            if (scancode == 0x2A || scancode == 0x36) {
+                shift_pressed = 1;
+                continue;
+            }
+            // Отпущен Shift
+            if (scancode == (0x2A | 0x80) || scancode == (0x36 | 0x80)) {
+                shift_pressed = 0;
+                continue;
             }
 
-            if (letter != 0) {
-                buffer[i++] = letter;
-                char str[2] = {letter, '\0'};
-                kprint(str);
+            // Отпускание остальных клавиш (старший бит = 1) - просто игнорируем
+            if (scancode & 0x80) continue;
+
+            // Если пришел мусор (0)
+            if (scancode == 0) continue;
+
+            // Клавиша Enter
+            if (scancode == 0x1C) {
+                buffer[i] = '\0';
+                kprint("\n");
+                break; // Выходим из цикла, команда введена
             }
-            // Ждем отпускания клавиши
-            while (port_byte_in(0x60) == scancode);
+
+            // Клавиша Backspace
+            if (scancode == 0x0E) {
+                if (i > 0) i--; // Удаляем последнюю букву из буфера
+                continue;
+            }
+
+            // Обычные символы
+            if (scancode < 0x80) {
+                char letter;
+                if (shift_pressed) {
+                    letter = scancode_to_char_shift[(int)scancode];
+                } else {
+                    letter = scancode_to_char[(int)scancode];
+                }
+
+                if (letter != 0) {
+                    buffer[i++] = letter;
+                    char str[2] = {letter, '\0'};
+                    kprint(str); // Печатаем букву на экран
+                }
+            }
         }
     }
 }

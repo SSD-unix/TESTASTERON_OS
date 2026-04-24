@@ -1,42 +1,76 @@
 /* drivers/ata.c */
 #include "ata.h"
 #include "lowlevel_io.h"
-// ... тут твой код функций read_sector и write_sector ...
-/* drivers/ata.c */
+#include "screen.h"
 #include "../common.h"
-#include "lowlevel_io.h"
 
+// --- Аппаратные функции для прямой работы процессора с памятью ---
+static inline void insw(uint16_t port, void *addr, uint32_t word_count) {
+    __asm__ volatile("rep insw" : "+D"(addr), "+c"(word_count) : "d"(port) : "memory");
+}
+
+static inline void outsw(uint16_t port, const void *addr, uint32_t word_count) {
+    __asm__ volatile("rep outsw" : "+S"(addr), "+c"(word_count) : "d"(port));
+}
+
+// --- Функции ожидания ---
+static void ata_delay() {
+    port_byte_in(0x1F7); port_byte_in(0x1F7);
+    port_byte_in(0x1F7); port_byte_in(0x1F7);
+}
+
+static int ata_wait(int check_drq) {
+    int timeout = 100000;
+    uint8_t status;
+    while (--timeout) {
+        status = port_byte_in(0x1F7);
+        if (status == 0xFF) return -1;
+        if ((status & 0x80) == 0) break;
+    }
+    if (timeout == 0) return -1;
+
+    if (check_drq) {
+        timeout = 100000;
+        while (--timeout) {
+            status = port_byte_in(0x1F7);
+            if (status & 0x08) break;
+        }
+        if (timeout == 0) return -1;
+    }
+    return 0;
+}
+
+// --- Чтение и запись секторов ---
 void read_sector(uint32_t lba, uint8_t* buffer) {
-    port_byte_out(0x1F6, (lba >> 24) | 0xE0);
+    port_byte_out(0x1F6, ((lba >> 24) & 0x0F) | 0xE0);
     port_byte_out(0x1F2, 1);
     port_byte_out(0x1F3, (uint8_t)lba);
     port_byte_out(0x1F4, (uint8_t)(lba >> 8));
     port_byte_out(0x1F5, (uint8_t)(lba >> 16));
     port_byte_out(0x1F7, 0x20);
 
-    while (!(port_byte_in(0x1F7) & 0x08));
+    ata_delay();
+    if (ata_wait(1) == -1) return;
 
-    int i;
-    for (i = 0; i < 256; i++) {
-        uint16_t data = port_word_in(0x1F0);
-        buffer[i*2] = (uint8_t)data;
-        buffer[i*2 + 1] = (uint8_t)(data >> 8);
-    }
+    // Читаем 256 слов (512 байт) одной аппаратной инструкцией
+    insw(0x1F0, buffer, 256);
 }
 
 void write_sector(uint32_t lba, uint8_t* buffer) {
-    port_byte_out(0x1F6, (lba >> 24) | 0xE0);
+    port_byte_out(0x1F6, ((lba >> 24) & 0x0F) | 0xE0);
     port_byte_out(0x1F2, 1);
     port_byte_out(0x1F3, (uint8_t)lba);
     port_byte_out(0x1F4, (uint8_t)(lba >> 8));
     port_byte_out(0x1F5, (uint8_t)(lba >> 16));
     port_byte_out(0x1F7, 0x30);
 
-    while (!(port_byte_in(0x1F7) & 0x08));
+    ata_delay();
+    if (ata_wait(1) == -1) return;
 
-    int i;
-    for (i = 0; i < 256; i++) {
-        uint16_t data = buffer[i*2] | (buffer[i*2 + 1] << 8);
-        port_word_out(0x1F0, data);
-    }
+    // Записываем 256 слов (512 байт) одной аппаратной инструкцией
+    outsw(0x1F0, buffer, 256);
+
+    port_byte_out(0x1F7, 0xE7); // Flush cache
+    ata_delay();
+    ata_wait(0);
 }

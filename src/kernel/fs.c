@@ -5,33 +5,30 @@
 #include "../drivers/screen.h"
 
 #define FS_ROOT_SECTOR 30
-
-struct file_entry {
-    char name[12];
-    uint32_t start_sector;
-    uint32_t size;
-    uint8_t active;
-};
+#define ENTRY_SIZE 32 // Ровно 32 байта на каждый файл
 
 // Подготовка диска
 void format_disk() {
     uint8_t buffer[512];
     for(int i = 0; i < 512; i++) buffer[i] = 0;
-    
+
     write_sector(FS_ROOT_SECTOR, buffer);
     kprint("File system initialized at sector 30.\n");
 }
 
 // Список файлов
 void list_files() {
-    struct file_entry dir[16]; // 16 записей влезают в 1 сектор (512 байт)
-    read_sector(FS_ROOT_SECTOR, (uint8_t*)dir);
+    uint8_t sector_buffer[512];
+    read_sector(FS_ROOT_SECTOR, sector_buffer);
 
     int found = 0;
     for (int i = 0; i < 16; i++) {
-        if (dir[i].active == 1) {
+        int offset = i * ENTRY_SIZE; // Смещение для каждого файла (0, 32, 64...)
+
+        // 24-й байт - это наш флаг active
+        if (sector_buffer[offset + 24] == 1) {
             kprint("- ");
-            kprint(dir[i].name);
+            kprint((char*)&sector_buffer[offset]); // Имя всегда лежит в самом начале блока
             kprint("\n");
             found = 1;
         }
@@ -41,27 +38,34 @@ void list_files() {
 
 // Создание пустого файла
 void touch_file(char* filename) {
-    struct file_entry dir[16];
-    read_sector(FS_ROOT_SECTOR, (uint8_t*)dir);
+    // === ДЕБАГ: Смотрим, что реально дошло до функции ===
+    kprint("[DEBUG] touch_file received: '");
+    kprint(filename);
+    kprint("'\n");
+
+    uint8_t sector_buffer[512];
+    read_sector(FS_ROOT_SECTOR, sector_buffer);
 
     for (int i = 0; i < 16; i++) {
-        if (dir[i].active == 0) {
-            // Копируем имя
+        int offset = i * ENTRY_SIZE;
+
+        // Ищем пустой слот (24-й байт равен 0)
+        if (sector_buffer[offset + 24] == 0) {
+
+            // Копируем имя побайтово (максимум 15 символов)
             int j = 0;
-            while(filename[j] != '\0' && j < 11) {
-                dir[i].name[j] = filename[j];
+            while(filename[j] != '\0' && j < 15) {
+                sector_buffer[offset + j] = filename[j];
                 j++;
             }
-            dir[i].name[j] = '\0';
-            
-            dir[i].active = 1;
-            dir[i].start_sector = FS_ROOT_SECTOR + 1 + i;
-            dir[i].size = 0;
+            sector_buffer[offset + j] = '\0';
 
-            write_sector(FS_ROOT_SECTOR, (uint8_t*)dir);
-            kprint("File '");
-            kprint(dir[i].name);
-            kprint("' created.\n");
+            // Ставим флаг active (24-й байт)
+            sector_buffer[offset + 24] = 1;
+
+            // Записываем обновленный сектор на диск
+            write_sector(FS_ROOT_SECTOR, sector_buffer);
+            kprint("File successfully saved to disk.\n");
             return;
         }
     }
