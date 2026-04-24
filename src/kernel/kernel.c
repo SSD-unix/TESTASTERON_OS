@@ -64,11 +64,19 @@ void execute_command(char *input) {
     else if (compare_string(input, "CLEAR") == 0) {
         clear_screen();
     }
+    else if (compare_string(input, "github") == 0) {
+        kprint("github.com/SSD-unix/TESTASTERON_OS/\n");
+    }
     else if (compare_string(input, "HELLO") == 0) {
         kprint("Hello user! Welcome to the shell.\n");
     }
+    else if (compare_string(input, "6") == 0) {
+        kprint("7\n");
+        kprint("oh no bye");
+        __asm__ volatile("hlt");
+    }
     else if (compare_string(input, "HELP") == 0) {
-        kprint("Commands: HELLO, CLEAR, EXIT, LS, FORMAT, TOUCH, INFO\n");
+        kprint("Commands: HELLO, CLEAR, EXIT, LS, FORMAT, TOUCH, INFO, github\n");
     }
     else if (compare_string(input, "INFO") == 0) {
         kprint("TESTASTERON 1.0 alpha\n");
