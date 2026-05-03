@@ -60,6 +60,7 @@ Install the QEMU emulator:
 ```bash
 sudo apt update
 sudo apt install qemu-kvm qemu
+
 ```
 
 ### 2. Set Up the Cross-Compiler
@@ -91,21 +92,7 @@ Launch the generated image using QEMU:
 qemu-system-i386 -fda os-image.bin
 ```
 
----
 
-## 📂 Project Structure
-
-```
-MIGHT_OS/
-├── src/
-│   ├── build/        # Build artifacts and Makefile
-│   ├── boot/         # Bootloader code
-│   ├── kernel/       # Kernel implementation
-│   └── drivers/      # Hardware drivers
-├── docs/             # Documentation
-├── README.md         # This file
-└── LICENSE           # Project license
-```
 
 ---
 
