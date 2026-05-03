@@ -94,7 +94,7 @@ make
 Launch the generated image using QEMU:
 
 ```bash
-qemu-system-i386 -fda os-image.bin
+make run
 ```
 
 
