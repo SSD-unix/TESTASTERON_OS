@@ -1,3 +1,4 @@
+![logo](https://i.imgur.com/PgDOez3.jpeg)
 # 🚀 MIGHT OS
 
 <div align="center">
