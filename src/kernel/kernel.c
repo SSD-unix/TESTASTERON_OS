@@ -130,7 +130,7 @@ void ux_mode() {
         draw_top_clock();
         if (needs_redraw) {
             fill_rect(0, 0, 80, 25, bios_color); draw_window(0, 0, 80, 25, bios_color);
-            print_at(" TESTOSTERONE OS SETUP UTILITY ", 24, 0, bios_color);
+            print_at(" MIGHT OS SETUP UTILITY ", 24, 0, bios_color);
             draw_window(2, 2, 20, 20, bios_color); print_at(" Main ", 4, 2, bios_color);
 
             print_at(selected_item == 0 ? "> System Info" : "  System Info", 4, 4, selected_item == 0 ? select_color : bios_color);
@@ -205,7 +205,7 @@ void execute_command(char *input) {
         kprint("Apps:   TETRIS, MARIO\n");
     }
     else if (compare_string(input, "INFO") == 0) {
-        kprint("TESTOSTERONE OS 1.0 alpha\nSite: ssdunix.xyz\nTotal RAM: ");
+        kprint("MIGHT OS 1.0 alpha\nSite: ssdunix.xyz\nTotal RAM: ");
         kprint_int(get_ram_size_mb()); kprint(" MB\n");
     }
     else if (compare_string(input, "TIME") == 0) {
@@ -287,7 +287,7 @@ void get_user_input(char* buffer) {
 void kmain() {
     force_reset_terminal();
     draw_window(18, 1, 44, 5, 0x0B);
-    kprint("\n\n                    Welcome to TESTOSTERONE OS!\n                     AUTHOR SITE: ssdunix.xyz\n\n\n");
+    kprint("\n\n                    Welcome to MIGHT OS!\n                     AUTHOR SITE: ssdunix.xyz\n\n\n");
 
     char user_input[256];
     while (1) {
