@@ -15,7 +15,7 @@
 void	kprint(u8 *str)
 {
 	/* Функция печати строки */
-	
+
 	// u8 *str: указатель на строку (на первый символ строки). Строка должна
 	// быть null-terminated.
 
@@ -39,14 +39,28 @@ void	putchar(u8 character, u8 attribute_byte)
 	if (character == '\n')
 	{
 		// Переводим строку.
-		if ((offset / 2 / MAX_COLS) == (MAX_ROWS - 1)) 
+		if ((offset / 2 / MAX_COLS) == (MAX_ROWS - 1))
 			scroll_line();
 		else
 			set_cursor((offset - offset % (MAX_COLS*2)) + MAX_COLS*2);
 	}
-	else 
+	else if (character == '\b')
 	{
-		if (offset == (MAX_COLS * MAX_ROWS * 2)) scroll_line();
+		// Обработка Backspace
+		if (offset >= 2)
+		{
+			offset -= 2;                        // Шагаем назад
+			write(' ', attribute_byte, offset); // Затираем старый символ пробелом
+			set_cursor(offset);                 // Устанавливаем курсор на затертое место
+		}
+	}
+	else
+	{
+		if (offset >= (MAX_COLS * MAX_ROWS * 2))
+		{
+			scroll_line();
+			offset = get_cursor(); // Обновляем offset, так как scroll_line переместил курсор
+		}
 		write(character, attribute_byte, offset);
 		set_cursor(offset+2);
 	}
@@ -99,7 +113,7 @@ void	write(u8 character, u8 attribute_byte, u16 offset)
 	// u8 character: байт, соответствующий символу
 	// u8 attribute_byte: байт, соответствующий цвету текста/фона символа
 	// u16 offset: смещение (позиция), по которому нужно распечатать символ
-	
+
 	u8 *vga = (u8 *) VIDEO_ADDRESS;
 	vga[offset] = character;
 	vga[offset + 1] = attribute_byte;
